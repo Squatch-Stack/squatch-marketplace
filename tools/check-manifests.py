@@ -34,10 +34,18 @@ def files_under(top):
 
 # 1. Exact file allowlist: the plugin ships no code, hooks, commands or agents.
 want_files = {f"{SHOP}/{p}" for p in (
-    ".claude-plugin/plugin.json", ".codex-plugin/plugin.json", ".mcp.json", "README.md", "skills/squatch-shop/SKILL.md")}
+    ".claude-plugin/plugin.json", ".claude-plugin/icon.png", ".codex-plugin/plugin.json", ".mcp.json", "README.md",
+    "skills/squatch-shop/SKILL.md")}
 got_files = files_under("plugins")
 check(got_files == want_files,
       f"files under plugins/ differ: extra={sorted(got_files - want_files)} missing={sorted(want_files - got_files)}")
+
+# 1b. The directory listing icon: a real square PNG, 512-2048 px (the directory takes it once, at first submission).
+icon = os.path.join(ROOT, SHOP, ".claude-plugin/icon.png")
+if os.path.exists(icon):
+    head = open(icon, "rb").read(24)
+    w, h = int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
+    check(head[:8] == b"\x89PNG\r\n\x1a\n" and w == h and 512 <= w <= 2048, f"icon.png must be a square PNG of 512-2048 px, got {w}x{h}")
 
 # 2. Claude marketplace.
 mkt = load(".claude-plugin/marketplace.json")
@@ -84,7 +92,8 @@ check(
 # 5. Plugin manifests: key allowlists, no hooks or apps, fixed skills and MCP paths.
 base_keys = {"name", "version", "description", "author", "homepage", "repository", "license", "keywords"}
 claude_pj = load(f"{SHOP}/.claude-plugin/plugin.json")
-check(set(claude_pj) <= base_keys, f"claude plugin.json has extra keys: {sorted(set(claude_pj) - base_keys)}")
+check(set(claude_pj) <= base_keys | {"privacyPolicyUrl"}, f"claude plugin.json has extra keys: {sorted(set(claude_pj) - base_keys - {'privacyPolicyUrl'})}")
+check(claude_pj.get("privacyPolicyUrl") == "https://mcp.squatch.cc/privacy", f"claude privacyPolicyUrl is {claude_pj.get('privacyPolicyUrl')!r}")
 codex_pj = load(f"{SHOP}/.codex-plugin/plugin.json")
 check(set(codex_pj) <= base_keys | {"skills", "mcpServers"},
       f"codex plugin.json has extra keys: {sorted(set(codex_pj) - base_keys - {'skills', 'mcpServers'})}")

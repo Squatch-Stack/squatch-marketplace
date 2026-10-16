@@ -6,5 +6,6 @@
   "homepage": "https://squatch.cc/",
   "repository": "https://github.com/squatch-stack/squatch-marketplace",
   "license": "MIT",
+  "privacyPolicyUrl": "https://mcp.squatch.cc/privacy",
   "keywords": ["shop", "gifts", "merch", "squatch-stack", "mcp"]
 }
