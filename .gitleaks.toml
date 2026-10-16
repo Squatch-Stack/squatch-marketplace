@@ -1,0 +1,8 @@
+# gitleaks config. Extends the built-in rules.
+# Do NOT add a global [allowlist] `paths` entry: it disables every rule for those files
+# (proven with a planted secret). Allow exact values instead:
+#   [[allowlists]]
+#   description = "why this value is public"
+#   regexes = ['''^exact-public-value$''']
+[extend]
+useDefault = true
