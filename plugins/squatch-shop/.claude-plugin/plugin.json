@@ -1,0 +1,10 @@
+{
+  "name": "squatch-shop",
+  "version": "1.0.0",
+  "description": "Browse the Squatch Stack shop, find a gift, and get a checkout link you open and pay in your own browser. Connects to the Squatch Stack server; it never pays for you.",
+  "author": { "name": "Squatch Stack", "url": "https://squatch.cc/" },
+  "homepage": "https://squatch.cc/",
+  "repository": "https://github.com/squatch-stack/squatch-marketplace",
+  "license": "MIT",
+  "keywords": ["shop", "gifts", "merch", "squatch-stack", "mcp"]
+}

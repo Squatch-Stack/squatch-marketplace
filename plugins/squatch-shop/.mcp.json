@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "squatch-stack": { "type": "http", "url": "https://mcp.squatch.cc/mcp" }
+  }
+}

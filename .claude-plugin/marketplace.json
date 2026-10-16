@@ -1,0 +1,23 @@
+{
+  "name": "squatch-stack",
+  "description": "Plugins from Squatch Stack for Claude Code and Codex: the Squatch Stack shop and Petnecto adoptable shelter pets. Both connect to servers we run and install no local code. The shop can send the studio a request, only after you confirm it.",
+  "owner": { "name": "Squatch Stack", "url": "https://squatch.cc/" },
+  "plugins": [
+    {
+      "name": "squatch-shop",
+      "source": "./plugins/squatch-shop",
+      "description": "Browse the Squatch Stack shop, find a gift, and get a checkout link to pay in your own browser. Never pays for you.",
+      "category": "shopping"
+    },
+    {
+      "name": "petnecto",
+      "source": {
+        "source": "github",
+        "repo": "squatch-stack/petnecto-claude-plugin",
+        "sha": "c6a5b20ea8b7d156922225050c66b30d4f2d5c18"
+      },
+      "description": "Find adoptable shelter pets with Petnecto and get the shelter's contact details. Read-only, no sign-in.",
+      "category": "lifestyle"
+    }
+  ]
+}

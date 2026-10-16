@@ -1,0 +1,92 @@
+# Every push and pull request: the marketplace and the local plugin pass Claude Code's own validator in strict mode, the
+# manifests say what we promise, no tracked file carries a home path or a private address, and no secret is in the
+# history.
+# Pinned: actions/checkout by commit SHA; the Claude Code linux-x64 binary by version and npm sha512 integrity
+# (published >= 7 days before it was pinned, OSV clean, fetched as a tarball so no install script runs); gitleaks by
+# version and SHA-256. No secrets are used here, and the token is read-only.
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Claude Code (pinned binary)
+        env:
+          CC_VERSION: "2.1.290"
+          CC_INTEGRITY: "sha512-1FQDIO4tXPFyw9wR1icEedIhEmLzOiQBAGR0NgETrXK8M2YbHEDXoE5Gg/LIuIee7giUuX5F2RzLw2N2i++ofQ=="
+        run: |
+          set -euo pipefail
+          tgz="claude-code-linux-x64-${CC_VERSION}.tgz"
+          curl -fsSL -o "$tgz" "https://registry.npmjs.org/@anthropic-ai/claude-code-linux-x64/-/${tgz}"
+          got="sha512-$(openssl dgst -sha512 -binary "$tgz" | base64 -w0)"
+          test "$got" = "$CC_INTEGRITY" || { echo "integrity mismatch: $got"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/cc"
+          tar xzf "$tgz" -C "$RUNNER_TEMP/cc" package/claude
+          echo "$RUNNER_TEMP/cc/package" >> "$GITHUB_PATH"
+
+      - name: Validate (strict)
+        env:
+          DISABLE_AUTOUPDATER: "1"
+          CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+        run: |
+          set -euo pipefail
+          claude --version
+          claude plugin validate ./ --strict
+          n=0
+          for p in plugins/*/; do
+            claude plugin validate "./$p" --strict
+            n=$((n + 1))
+          done
+          test "$n" -ge 1 || { echo "expected at least 1 local plugin, validated $n"; exit 1; }
+
+      - name: Manifests say what we promise
+        run: |
+          set -euo pipefail
+          python3 -I tools/check-manifests.py .
+
+      - name: Manifest check goes red on a broken copy
+        run: |
+          set -euo pipefail
+          copy="$RUNNER_TEMP/broken"
+          mkdir -p "$copy"
+          cp -R .claude-plugin .agents plugins "$copy/"
+          mkdir -p "$copy/plugins/squatch-shop/hooks"
+          echo '{"hooks":{}}' > "$copy/plugins/squatch-shop/hooks/hooks.json"
+          sed -i 's#https://mcp.squatch.cc/mcp#https://mcp.example.com/mcp#' "$copy/plugins/squatch-shop/.mcp.json"
+          if python3 -I tools/check-manifests.py "$copy"; then
+            echo "the manifest check passed a broken copy"; exit 1
+          fi
+          echo "the manifest check rejected the broken copy, as it should"
+
+      - name: No home paths or private addresses
+        run: |
+          set -euo pipefail
+          pattern='~/|/Users/|/home/[a-z]|\.secrets|192\.168\.|(^|[^0-9.])10\.[0-9]+\.[0-9]+\.[0-9]+|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]+\.[0-9]+'
+          files=$(git ls-files | wc -l)
+          test "$files" -ge 12 || { echo "only $files tracked files: checkout looks empty"; exit 1; }
+          if git grep -nIE "$pattern" -- . ':!.github/workflows/ci.yml'; then
+            echo "found a home path or private address (above)"; exit 1
+          fi
+          echo "checked $files tracked files"
+
+      - name: Secrets (gitleaks)
+        env:
+          GL_VERSION: "8.30.1"
+          GL_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+        run: |
+          set -euo pipefail
+          tar="gitleaks_${GL_VERSION}_linux_x64.tar.gz"
+          curl -fsSLO "https://github.com/gitleaks/gitleaks/releases/download/v${GL_VERSION}/${tar}"
+          echo "${GL_SHA256}  ${tar}" | sha256sum -c -
+          tar xzf "$tar" gitleaks
+          ./gitleaks git --redact --no-banner --config .gitleaks.toml .

@@ -1,0 +1,22 @@
+{
+  "name": "squatch-stack",
+  "interface": { "displayName": "Squatch Stack" },
+  "plugins": [
+    {
+      "name": "squatch-shop",
+      "source": { "source": "local", "path": "./plugins/squatch-shop" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_USE" },
+      "category": "Shopping"
+    },
+    {
+      "name": "petnecto",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/squatch-stack/petnecto-claude-plugin.git",
+        "sha": "c6a5b20ea8b7d156922225050c66b30d4f2d5c18"
+      },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_USE" },
+      "category": "Lifestyle"
+    }
+  ]
+}
